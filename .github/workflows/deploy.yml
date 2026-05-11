@@ -22,3 +22,15 @@ jobs:
         with:
           branch: gh-pages
           folder: build
+
+      - name: Deploy and Rebuild
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          script: |
+            cd /home/dev-user/my-project
+            git pull origin main  # Подтягиваем новый код
+            docker-compose up -d --build  # Флаг --build заставит Docker пересобрать React-приложение
+            docker image prune -f  # Удаляем старые ненужные образы, чтобы не забивать место
