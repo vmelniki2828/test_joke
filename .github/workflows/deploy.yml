@@ -24,13 +24,14 @@ jobs:
             # 2. Подтягиваем новый код
             git pull origin main
             
-            # 3. Принудительно отключаем использование buildx (чтобы не было ошибки)
+            # 3. Отключаем BuildKit (решает проблему старой версии buildx на твоем AWS)
             export DOCKER_BUILDKIT=0
             export COMPOSE_DOCKER_CLI_BUILD=0
             
-            # 4. Пересобираем только наш проект
+            # 4. Перезапуск проекта
+            # Используем sudo, если у dev-user нет прав на docker без него
             docker-compose down
             docker-compose up -d --build
             
-            # 5. Чистим старые образы, чтобы диск не забился
+            # 5. Очистка (исправил опечатку с -fname на -f)
             docker image prune -f
