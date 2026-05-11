@@ -11,21 +11,26 @@ jobs:
       - name: Checkout code 🛎️
         uses: actions/checkout@v3
 
-      - name: Deploy and Rebuild via SSH 🚀
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSHKEY }}
           script: |
+            # 1. Переходим строго в папку проекта
             cd /home/dev-user/my-project
-            # Если папки еще нет или это не git-репозиторий — клонируем
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/vmelniki2828/test_joke.git .
-            else
-              git pull origin main
-            fi
-            # Собираем образ и перезапускаем контейнеры
+            
+            # 2. Подтягиваем новый код
+            git pull origin main
+            
+            # 3. Принудительно отключаем использование buildx (чтобы не было ошибки)
+            export DOCKER_BUILDKIT=0
+            export COMPOSE_DOCKER_CLI_BUILD=0
+            
+            # 4. Пересобираем только наш проект
+            docker-compose down
             docker-compose up -d --build
-            # Удаляем старые слои, чтобы диск не переполнился
+            
+            # 5. Чистим старые образы, чтобы диск не забился
             docker image prune -f
