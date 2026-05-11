@@ -1,29 +1,17 @@
-name: Build and deploy to GitHub Pages
+name: Build and deploy to AWS
 
 on:
   push:
     branches: [main]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@v2.3.1
+      - name: Checkout code 🛎️
+        uses: actions/checkout@v3
 
-      - name: Install, lint, build 🔧
-        run: |
-          npm install
-          npm run lint:js
-          npm run build
-
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.0
-        with:
-          branch: gh-pages
-          folder: build
-
-      - name: Deploy and Rebuild
+      - name: Deploy and Rebuild via SSH 🚀
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -31,6 +19,13 @@ jobs:
           key: ${{ secrets.SSHKEY }}
           script: |
             cd /home/dev-user/my-project
-            git pull origin main  # Подтягиваем новый код
-            docker-compose up -d --build  # Флаг --build заставит Docker пересобрать React-приложение
-            docker image prune -f  # Удаляем старые ненужные образы, чтобы не забивать место
+            # Если папки еще нет или это не git-репозиторий — клонируем
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/vmelniki2828/test_joke.git .
+            else
+              git pull origin main
+            fi
+            # Собираем образ и перезапускаем контейнеры
+            docker-compose up -d --build
+            # Удаляем старые слои, чтобы диск не переполнился
+            docker image prune -f
